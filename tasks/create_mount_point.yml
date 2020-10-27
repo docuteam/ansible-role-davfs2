@@ -1,0 +1,18 @@
+- name: davfs2 | check if mount point exists
+  stat:
+    path: "{{ item.dest }}"
+  register: local_davfs2_mount_point_state
+  check_mode: no
+
+- name: davfs2 | check if mount point is in use
+  command: mountpoint -q {{ item.dest }}
+  register: local_davfs2_mount_state
+  failed_when: local_davfs2_mount_state.rc != 0 and local_davfs2_mount_state.rc != 1
+  changed_when: False
+  check_mode: no
+
+# Only change mount point permissions if mount point doesn't exist or is not in use
+- name: davfs2 | create mount point and set permissions
+  file: path={{ item.dest }} state=directory owner=root group=root mode=0555
+  when: local_davfs2_mount_point_state.stat.exists == false or local_davfs2_mount_state.rc == 1
+  check_mode: no
